@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat với AI Bot</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tùy chỉnh thêm nếu cần */
+        body {
+            font-family: 'Arial', sans-serif; /* Sử dụng font phổ biến */
+        }
+        .chat-container {
+            max-width: 600px;
+            margin: 20px auto;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            height: 80vh; /* Chiều cao cố định cho khung chat */
+            background-color: #fff; /* Nền trắng cho container */
+        }
+        .chat-box {
+            flex-grow: 1;
+            padding: 15px;
+            overflow-y: auto; /* Cho phép cuộn khi nội dung dài */
+            background-color: #f9f9f9; /* Nền nhẹ cho khung chat */
+            display: flex; /* Sử dụng flexbox để căn chỉnh tin nhắn */
+            flex-direction: column;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 10px 15px; /* Tăng padding */
+            border-radius: 18px; /* Bo tròn nhiều hơn */
+            max-width: 80%;
+            word-wrap: break-word; /* Ngắt dòng khi tin nhắn dài */
+            box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13); /* Thêm bóng nhẹ */
+        }
+        .user-message {
+            background-color: #007bff;
+            color: white;
+            align-self: flex-end; /* Căn phải */
+            margin-left: auto; /* Đẩy sang phải */
+            border-bottom-right-radius: 2px; /* Góc dưới bên phải ít bo tròn */
+        }
+        .bot-message {
+            background-color: #e9e9eb;
+            color: #333;
+            align-self: flex-start; /* Căn trái */
+            margin-right: auto; /* Đẩy sang trái */
+             border-bottom-left-radius: 2px; /* Góc dưới bên trái ít bo tròn */
+        }
+         .loading-message {
+            font-style: italic;
+            color: #666;
+            align-self: flex-start; /* Căn trái */
+            margin-right: auto; /* Đẩy sang trái */
+        }
+        .input-area {
+            display: flex;
+            padding: 15px;
+            border-top: 1px solid #ccc;
+            background-color: #fff;
+            align-items: center; /* Căn giữa theo chiều dọc */
+        }
+        .input-area input {
+            flex-grow: 1;
+            padding: 12px; /* Tăng padding */
+            border: 1px solid #ccc;
+            border-radius: 20px; /* Bo tròn input */
+            margin-right: 10px;
+            outline: none;
+            font-size: 1rem; /* Kích thước font */
+        }
+        .input-area button {
+            padding: 12px 25px; /* Tăng padding */
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 20px; /* Bo tròn button */
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            font-size: 1rem; /* Kích thước font */
+        }
+        .input-area button:hover {
+            background-color: #218838;
+        }
+        .input-area button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <div class="chat-container shadow-lg">
+        <div class="chat-box" id="chat-box">
+            <div class="message bot-message">Chào bạn! Tôi là AI Bot. Bạn có câu hỏi gì không?</div>
+        </div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Nhập tin nhắn của bạn...">
+            <button id="send-button">Gửi</button>
+        </div>
+    </div>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        // Hàm thêm tin nhắn vào khung chat
+        function addMessage(message, sender, isTyping = false) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', `${sender}-message`);
+            if (isTyping) {
+                 messageElement.classList.add('loading-message');
+                 messageElement.textContent = 'AI Bot đang suy nghĩ...'; // Hoặc dùng dấu ba chấm động
+            } else {
+                messageElement.textContent = message;
+            }
+            chatBox.appendChild(messageElement);
+            // Cuộn xuống cuối khung chat
+            chatBox.scrollTop = chatBox.scrollHeight;
+            return messageElement; // Trả về phần tử tin nhắn để có thể xóa sau
+        }
+
+        // Hàm gửi tin nhắn đến backend
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (message === '') {
+                return; // Không gửi tin nhắn trống
+            }
+
+            // Thêm tin nhắn của người dùng vào khung chat
+            addMessage(message, 'user');
+
+            // Xóa nội dung trong ô nhập liệu và vô hiệu hóa input/button
+            userInput.value = '';
+            userInput.disabled = true;
+            sendButton.disabled = true;
+
+            // Hiển thị trạng thái đang gõ
+            const typingMessageElement = addMessage('', 'bot', true);
+
+
+            try {
+                // Gửi tin nhắn đến endpoint backend của bạn trên Vercel
+                // Vercel sẽ tự động định tuyến /api/chat đến Serverless Function
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ message: message })
+                });
+
+                if (!response.ok) {
+                    // Xử lý lỗi HTTP
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const data = await response.json();
+                const botResponse = data.reply; // Giả định backend trả về JSON có trường 'reply'
+
+                // Xóa trạng thái đang gõ
+                chatBox.removeChild(typingMessageElement);
+
+                // Thêm phản hồi của bot vào khung chat
+                addMessage(botResponse, 'bot');
+
+            } catch (error) {
+                console.error('Lỗi khi gửi tin nhắn:', error);
+                 // Xóa trạng thái đang gõ nếu còn
+                 if (chatBox.contains(typingMessageElement)) {
+                     chatBox.removeChild(typingMessageElement);
+                 }
+                addMessage('Xin lỗi, đã xảy ra lỗi khi kết nối với AI Bot.', 'bot');
+            } finally {
+                // Kích hoạt lại input và button
+                userInput.disabled = false;
+                sendButton.disabled = false;
+                userInput.focus(); // Đặt con trỏ vào input sau khi gửi
+            }
+        }
+
+        // Lắng nghe sự kiện click vào nút Gửi
+        sendButton.addEventListener('click', sendMessage);
+
+        // Lắng nghe sự kiện nhấn Enter trong ô nhập liệu
+        userInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); // Ngăn chặn hành động mặc định của Enter (xuống dòng)
+                sendMessage();
+            }
+        });
+
+         // Đặt con trỏ vào ô nhập liệu khi trang tải xong
+        window.onload = function() {
+            userInput.focus();
+        };
+    </script>
+
+</body>
+</html>
