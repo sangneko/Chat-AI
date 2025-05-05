@@ -45,7 +45,8 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         // Chọn mô hình Gemini bạn muốn sử dụng
-        const model = genAI.getGenerativeModel({ model: "gemini-pro"}); // Hoặc "gemini-ultra", tùy thuộc vào quyền truy cập của bạn
+        // Đã cập nhật tên mô hình từ "gemini-pro" sang "gemini-1.0-pro"
+        const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro"}); // Sử dụng tên mô hình phổ biến hơn
 
         // Bắt đầu một cuộc hội thoại với mô hình
         const chat = model.startChat({
@@ -81,15 +82,17 @@ app.post('/api/chat', async (req, res) => {
         console.error('Lỗi khi gọi API Google AI:', error);
 
         // Trả về lỗi cho frontend
-        if (error.response) {
-             // Lỗi từ phản hồi của Google AI API (có thể kiểm tra status code nếu API cung cấp)
-             console.error("API Response Error:", error.response.status, error.response.data);
-             res.status(error.response.status || 500).json({ error: 'Lỗi từ API Google AI', details: error.response.data });
-        } else {
-            // Các lỗi khác (ví dụ: lỗi mạng, lỗi khởi tạo)
-            console.error('Lỗi:', error.message);
-             res.status(500).json({ error: 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.', details: error.message });
+        // Cố gắng trích xuất thông báo lỗi chi tiết hơn nếu có
+        let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.';
+        if (error.message) {
+            errorMessage = error.message;
+        } else if (error.response && error.response.data) {
+             errorMessage = `Lỗi từ API Google AI: ${JSON.stringify(error.response.data)}`;
         }
+
+
+        res.status(error.status || error.response?.status || 500).json({ error: errorMessage });
+
     }
 });
 
