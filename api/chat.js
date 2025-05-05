@@ -1,10 +1,10 @@
 // api/chat.js
-// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng API của aimlapi.com
+// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng thư viện OpenAI với API của aimlapi.com
 
 // Import các thư viện cần thiết
 const express = require('express');
-// Import thư viện aimlapi
-const AIMLAPI = require("@aimlapi/aimlapi");
+// Import thư viện OpenAI
+const OpenAI = require("openai");
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -12,9 +12,12 @@ const app = express();
 // Middleware để xử lý JSON trong request body
 app.use(express.json());
 
-// Khởi tạo AIMLAPI client với API Key từ biến môi trường của Vercel
+// Khởi tạo OpenAI client, trỏ đến base_url của aimlapi.com
 // Đảm bảo biến môi trường AIMLAPI_API_KEY đã được thiết lập trên Vercel
-const aimlapi = new AIMLAPI(process.env.AIMLAPI_API_KEY);
+const aimlapi = new OpenAI({
+  apiKey: process.env.AIMLAPI_API_KEY, // Sử dụng API Key của aimlapi.com
+  baseURL: "https://api.aimlapi.com/v1", // Trỏ đến base URL của aimlapi.com
+});
 
 // Kiểm tra xem API Key có được tải thành công không
 if (!process.env.AIMLAPI_API_KEY) {
@@ -45,10 +48,10 @@ app.post('/api/chat', async (req, res) => {
     console.log(`Nhận tin nhắn từ người dùng: "${userMessage}"`);
 
     try {
-        // Gọi API của aimlapi.com để tạo phản hồi chat
-        // Bạn có thể chỉ định model cụ thể nếu muốn, ví dụ: model: "gpt-3.5-turbo"
+        // Gọi API chat completions thông qua client đã cấu hình
+        // Bạn có thể chỉ định model cụ thể nếu muốn, ví dụ: model: "gpt-4o"
         const completion = await aimlapi.chat.completions.create({
-            model: "gpt-3.5-turbo", // Sử dụng mô hình mặc định hoặc chỉ định mô hình khác
+            model: "gpt-3.5-turbo", // Sử dụng mô hình mặc định hoặc chỉ định mô hình khác có sẵn trên aimlapi.com
             messages: [
                 {"role": "system", "content": "Bạn là một trợ lý AI hữu ích."}, // Vai trò của bot
                 {"role": "user", "content": userMessage} // Tin nhắn của người dùng
@@ -76,8 +79,8 @@ app.post('/api/chat', async (req, res) => {
         } else if (error.response && error.response.data) {
              errorMessage = `Lỗi từ API aimlapi.com: ${JSON.stringify(error.response.data)}`;
         } else {
-             // Xử lý lỗi từ thư viện AIMLAPI client
-             errorMessage = `Lỗi từ thư viện AIMLAPI: ${error.message}`;
+             // Xử lý lỗi từ thư viện OpenAI client
+             errorMessage = `Lỗi từ thư viện OpenAI: ${error.message}`;
         }
 
 
