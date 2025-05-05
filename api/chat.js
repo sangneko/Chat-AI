@@ -1,5 +1,6 @@
 // api/chat.js
-// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng thư viện OpenAI với API của aimlapi.com
+// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng API từ puter.com
+// Tham khảo hướng dẫn tại https://developer.puter.com/tutorials/free-unlimited-openai-api/
 
 // Import các thư viện cần thiết
 const express = require('express');
@@ -12,21 +13,30 @@ const app = express();
 // Middleware để xử lý JSON trong request body
 app.use(express.json());
 
-// Khởi tạo OpenAI client, trỏ đến base_url của aimlapi.com
-// Đảm bảo biến môi trường AIMLAPI_API_KEY đã được thiết lập trên Vercel
-const aimlapi = new OpenAI({
-  apiKey: process.env.AIMLAPI_API_KEY, // Sử dụng API Key của aimlapi.com
-  baseURL: "https://api.aimlapi.com/v1", // Trỏ đến base URL của aimlapi.com
-});
+// Lấy API Key từ biến môi trường của Vercel
+// Thay thế 'PUTER_API_KEY' bằng tên biến môi trường mà hướng dẫn từ puter.com gợi ý
+const apiKey = process.env.PUTER_API_KEY;
+
+// Lấy Base URL từ hướng dẫn của puter.com
+// Thay thế 'https://api.puter.com/v1' bằng Base URL thực tế từ hướng dẫn
+const baseURL = "https://api.puter.com/v1"; // <-- Thay thế bằng Base URL từ hướng dẫn
 
 // Kiểm tra xem API Key có được tải thành công không
-if (!process.env.AIMLAPI_API_KEY) {
-    console.error("Lỗi: Không tìm thấy biến môi trường AIMLAPI_API_KEY.");
-    console.error("Vui lòng thiết lập biến môi trường AIMLAPI_API_KEY trong cài đặt dự án Vercel của bạn.");
+// Thay thế 'PUTER_API_KEY' bằng tên biến môi trường bạn dùng
+if (!apiKey) {
+    console.error("Lỗi: Không tìm thấy biến môi trường PUTER_API_KEY.");
+    console.error("Vui lòng thiết lập biến môi trường PUTER_API_KEY trong cài đặt dự án Vercel của bạn.");
     // Không thoát ngay mà vẫn export app để Vercel có thể deploy, nhưng function sẽ báo lỗi khi chạy
 } else {
-    console.log("Đã tải thành công AIMLAPI_API_KEY.");
+    console.log("Đã tải thành công PUTER_API_KEY.");
 }
+
+// Khởi tạo OpenAI client, trỏ đến base_url của dịch vụ mới
+const client = new OpenAI({
+  apiKey: apiKey, // Sử dụng API Key từ biến môi trường
+  baseURL: baseURL, // Trỏ đến Base URL của dịch vụ mới
+});
+
 
 // Định nghĩa endpoint POST /api/chat
 // Vercel sẽ định tuyến các yêu cầu đến /api/chat tới function này
@@ -41,17 +51,18 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // Kiểm tra lại API Key trước khi gọi API
-     if (!process.env.AIMLAPI_API_KEY) {
-         return res.status(500).json({ error: 'API Key cho aimlapi.com chưa được cấu hình trên server.' });
+     if (!process.env.PUTER_API_KEY) { // <-- Thay thế bằng tên biến môi trường bạn dùng
+         return res.status(500).json({ error: 'API Key cho dịch vụ AI mới chưa được cấu hình trên server.' });
      }
 
     console.log(`Nhận tin nhắn từ người dùng: "${userMessage}"`);
 
     try {
         // Gọi API chat completions thông qua client đã cấu hình
-        // Bạn có thể chỉ định model cụ thể nếu muốn, ví dụ: model: "gpt-4o"
-        const completion = await aimlapi.chat.completions.create({
-            model: "gpt-3.5-turbo", // Sử dụng mô hình mặc định hoặc chỉ định mô hình khác có sẵn trên aimlapi.com
+        // Chọn mô hình dựa trên những gì dịch vụ mới hỗ trợ.
+        // Tham khảo tài liệu của dịch vụ mới để biết tên mô hình chính xác.
+        const completion = await client.chat.completions.create({
+            model: "gpt-3.5-turbo", // <-- Kiểm tra và thay thế bằng tên mô hình được hỗ trợ
             messages: [
                 {"role": "system", "content": "Bạn là một trợ lý AI hữu ích."}, // Vai trò của bot
                 {"role": "user", "content": userMessage} // Tin nhắn của người dùng
@@ -69,15 +80,15 @@ app.post('/api/chat', async (req, res) => {
         res.json({ reply: botReply });
 
     } catch (error) {
-        // Xử lý lỗi trong quá trình gọi API của aimlapi.com
-        console.error('Lỗi khi gọi API aimlapi.com:', error);
+        // Xử lý lỗi trong quá trình gọi API của dịch vụ mới
+        console.error('Lỗi khi gọi API dịch vụ AI mới:', error);
 
         // Trả về lỗi cho frontend
-        let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn với aimlapi.com.';
+        let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn với dịch vụ AI mới.';
         if (error.message) {
             errorMessage = error.message;
         } else if (error.response && error.response.data) {
-             errorMessage = `Lỗi từ API aimlapi.com: ${JSON.stringify(error.response.data)}`;
+             errorMessage = `Lỗi từ API dịch vụ AI mới: ${JSON.stringify(error.response.data)}`;
         } else {
              // Xử lý lỗi từ thư viện OpenAI client
              errorMessage = `Lỗi từ thư viện OpenAI: ${error.message}`;
