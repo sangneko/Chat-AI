@@ -1,9 +1,10 @@
 // api/chat.js
-// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng Google AI Gemini
+// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng một dịch vụ AI khác
 
 // Import các thư viện cần thiết
 const express = require('express');
-const { GoogleGenerativeAI } = require("@google/generative-ai"); // Import thư viện Google AI
+// Thay thế dòng dưới bằng import thư viện của dịch vụ AI bạn chọn
+// Ví dụ: const { NewAILibrary } = require("new-ai-library");
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -11,17 +12,20 @@ const app = express();
 // Middleware để xử lý JSON trong request body
 app.use(express.json());
 
-// Khởi tạo GoogleGenerativeAI với API Key từ biến môi trường của Vercel
-// Vercel sẽ tự động cung cấp biến môi trường GOOGLE_API_KEY
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+// Khởi tạo client cho dịch vụ AI mới với API Key từ biến môi trường của Vercel
+// Đảm bảo biến môi trường cho dịch vụ AI mới đã được thiết lập trên Vercel
+// Thay thế 'NEW_AI_API_KEY' bằng tên biến môi trường bạn dùng cho khóa API mới
+// Thay thế 'NewAILibrary' bằng tên lớp/hàm khởi tạo client của thư viện mới
+// const newAIClient = new NewAILibrary(process.env.NEW_AI_API_KEY);
 
 // Kiểm tra xem API Key có được tải thành công không
-if (!process.env.GOOGLE_API_KEY) {
-    console.error("Lỗi: Không tìm thấy biến môi trường GOOGLE_API_KEY.");
-    console.error("Vui lòng thiết lập biến môi trường GOOGLE_API_KEY trong cài đặt dự án Vercel của bạn.");
+// Thay thế 'NEW_AI_API_KEY' bằng tên biến môi trường bạn dùng
+if (!process.env.NEW_AI_API_KEY) {
+    console.error("Lỗi: Không tìm thấy biến môi trường NEW_AI_API_KEY.");
+    console.error("Vui lòng thiết lập biến môi trường cho dịch vụ AI mới trong cài đặt dự án Vercel của bạn.");
     // Không thoát ngay mà vẫn export app để Vercel có thể deploy, nhưng function sẽ báo lỗi khi chạy
 } else {
-    console.log("Đã tải thành công GOOGLE_API_KEY.");
+    console.log("Đã tải thành công NEW_AI_API_KEY.");
 }
 
 // Định nghĩa endpoint POST /api/chat
@@ -37,40 +41,33 @@ app.post('/api/chat', async (req, res) => {
     }
 
     // Kiểm tra lại API Key trước khi gọi API
-     if (!process.env.GOOGLE_API_KEY) {
-         return res.status(500).json({ error: 'API Key cho Google AI chưa được cấu hình trên server.' });
+    // Thay thế 'NEW_AI_API_KEY' bằng tên biến môi trường bạn dùng
+     if (!process.env.NEW_AI_API_KEY) {
+         return res.status(500).json({ error: 'API Key cho dịch vụ AI mới chưa được cấu hình trên server.' });
      }
 
     console.log(`Nhận tin nhắn từ người dùng: "${userMessage}"`);
 
     try {
-        // Chọn mô hình Gemini bạn muốn sử dụng
-        // Cập nhật tên mô hình dựa trên log lỗi 404 trước đó.
-        // Thử sử dụng "gemini-1.5-pro" thay vì "gemini-1.0-pro" hoặc "gemini-pro".
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro"}); // Thử tên mô hình khác
+        // --- Phần này cần được thay thế hoàn toàn bằng cách gọi API của dịch vụ AI mới ---
+        // Tham khảo tài liệu API của dịch vụ AI bạn chọn để biết cách gửi prompt và nhận phản hồi
 
-        // Bắt đầu một cuộc hội thoại với mô hình
-        const chat = model.startChat({
-            // Có thể thêm lịch sử chat ở đây nếu bạn muốn bot nhớ ngữ cảnh
-            // history: [
-            //   {
-            //     role: "user",
-            //     parts: "Xin chào!",
-            //   },
-            //   {
-            //     role: "model",
-            //     parts: "Chào bạn! Tôi là AI Bot. Bạn có câu hỏi gì không?",
-            //   },
-            // ],
-            generationConfig: {
-                maxOutputTokens: 200, // Giới hạn độ dài phản hồi (có thể điều chỉnh)
-            },
-        });
+        // Ví dụ placeholder:
+        // const aiResponse = await newAIClient.generateText({
+        //     prompt: userMessage,
+        //     maxLength: 200, // Tùy chỉnh giới hạn độ dài
+        // });
+        // const botReply = aiResponse.text; // Cách lấy nội dung phản hồi tùy thuộc vào thư viện
 
-        // Gửi tin nhắn của người dùng và nhận phản hồi
-        const result = await chat.sendMessage(userMessage);
-        const response = await result.response;
-        const botReply = response.text(); // Lấy nội dung phản hồi từ AI
+        // --- Kết thúc phần thay thế ---
+
+        // **Mô phỏng phản hồi nếu chưa tích hợp API thật:**
+        // Xóa phần mô phỏng này khi bạn đã tích hợp API thật
+         console.warn("Chú ý: Đang sử dụng phản hồi mô phỏng vì API AI mới chưa được tích hợp.");
+         await new Promise(resolve => setTimeout(resolve, 1000)); // Mô phỏng độ trễ
+         const botReply = `(Mô phỏng) Tôi đã nhận được tin nhắn của bạn: "${userMessage}". Vui lòng tích hợp API của dịch vụ AI mới.`;
+        // **Kết thúc mô phỏng**
+
 
         // Ghi log phản hồi từ AI
         console.log(`Phản hồi từ AI: "${botReply}"`);
@@ -79,21 +76,18 @@ app.post('/api/chat', async (req, res) => {
         res.json({ reply: botReply });
 
     } catch (error) {
-        // Xử lý lỗi trong quá trình gọi API Google AI
-        console.error('Lỗi khi gọi API Google AI:', error);
+        // Xử lý lỗi trong quá trình gọi API của dịch vụ AI mới
+        console.error('Lỗi khi gọi API dịch vụ AI mới:', error);
 
         // Trả về lỗi cho frontend
-        // Cố gắng trích xuất thông báo lỗi chi tiết hơn nếu có
-        let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.';
+        let errorMessage = 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn với dịch vụ AI mới.';
         if (error.message) {
             errorMessage = error.message;
         } else if (error.response && error.response.data) {
-             errorMessage = `Lỗi từ API Google AI: ${JSON.stringify(error.response.data)}`;
+             errorMessage = `Lỗi từ API dịch vụ AI mới: ${JSON.stringify(error.response.data)}`;
         }
 
-
         res.status(error.status || error.response?.status || 500).json({ error: errorMessage });
-
     }
 });
 
