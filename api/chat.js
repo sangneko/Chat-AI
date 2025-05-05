@@ -1,10 +1,9 @@
 // api/chat.js
-// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat
+// Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng Google AI Gemini
 
 // Import các thư viện cần thiết
 const express = require('express');
-const OpenAI = require('openai');
-// Không cần require('dotenv').config() ở đây vì Vercel quản lý biến môi trường
+const { GoogleGenerativeAI } = require("@google/generative-ai"); // Import thư viện Google AI
 
 // Khởi tạo ứng dụng Express
 const app = express();
@@ -12,11 +11,18 @@ const app = express();
 // Middleware để xử lý JSON trong request body
 app.use(express.json());
 
-// Khởi tạo OpenAI client với API Key từ biến môi trường của Vercel
-// Vercel sẽ tự động cung cấp biến môi trường OPENAI_API_KEY
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Khởi tạo GoogleGenerativeAI với API Key từ biến môi trường của Vercel
+// Vercel sẽ tự động cung cấp biến môi trường GOOGLE_API_KEY
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
+
+// Kiểm tra xem API Key có được tải thành công không
+if (!process.env.GOOGLE_API_KEY) {
+    console.error("Lỗi: Không tìm thấy biến môi trường GOOGLE_API_KEY.");
+    console.error("Vui lòng thiết lập biến môi trường GOOGLE_API_KEY trong cài đặt dự án Vercel của bạn.");
+    // Không thoát ngay mà vẫn export app để Vercel có thể deploy, nhưng function sẽ báo lỗi khi chạy
+} else {
+    console.log("Đã tải thành công GOOGLE_API_KEY.");
+}
 
 // Định nghĩa endpoint POST /api/chat
 // Vercel sẽ định tuyến các yêu cầu đến /api/chat tới function này
@@ -30,22 +36,39 @@ app.post('/api/chat', async (req, res) => {
         return res.status(400).json({ error: 'Không có tin nhắn được gửi.' });
     }
 
-    // Ghi log (sẽ hiển thị trong dashboard Vercel)
+    // Kiểm tra lại API Key trước khi gọi API
+     if (!process.env.GOOGLE_API_KEY) {
+         return res.status(500).json({ error: 'API Key cho Google AI chưa được cấu hình trên server.' });
+     }
+
     console.log(`Nhận tin nhắn từ người dùng: "${userMessage}"`);
 
     try {
-        // Gọi API của OpenAI để tạo phản hồi
-        const completion = await openai.chat.completions.create({
-            model: "gpt-3.5-turbo", // Hoặc mô hình khác bạn muốn sử dụng (ví dụ: gpt-4)
-            messages: [
-                {"role": "system", "content": "Bạn là một trợ lý AI hữu ích."}, // Vai trò của bot
-                {"role": "user", "content": userMessage} // Tin nhắn của người dùng
-            ],
-            max_tokens: 200, // Giới hạn độ dài phản hồi (có thể điều chỉnh)
+        // Chọn mô hình Gemini bạn muốn sử dụng
+        const model = genAI.getGenerativeModel({ model: "gemini-pro"}); // Hoặc "gemini-ultra", tùy thuộc vào quyền truy cập của bạn
+
+        // Bắt đầu một cuộc hội thoại với mô hình
+        const chat = model.startChat({
+            // Có thể thêm lịch sử chat ở đây nếu bạn muốn bot nhớ ngữ cảnh
+            // history: [
+            //   {
+            //     role: "user",
+            //     parts: "Xin chào!",
+            //   },
+            //   {
+            //     role: "model",
+            //     parts: "Chào bạn! Tôi là AI Bot. Bạn có câu hỏi gì không?",
+            //   },
+            // ],
+            generationConfig: {
+                maxOutputTokens: 200, // Giới hạn độ dài phản hồi (có thể điều chỉnh)
+            },
         });
 
-        // Lấy nội dung phản hồi từ AI
-        const botReply = completion.choices[0].message.content;
+        // Gửi tin nhắn của người dùng và nhận phản hồi
+        const result = await chat.sendMessage(userMessage);
+        const response = await result.response;
+        const botReply = response.text(); // Lấy nội dung phản hồi từ AI
 
         // Ghi log phản hồi từ AI
         console.log(`Phản hồi từ AI: "${botReply}"`);
@@ -54,17 +77,16 @@ app.post('/api/chat', async (req, res) => {
         res.json({ reply: botReply });
 
     } catch (error) {
-        // Xử lý lỗi trong quá trình gọi API OpenAI
-        console.error('Lỗi khi gọi API OpenAI:', error);
+        // Xử lý lỗi trong quá trình gọi API Google AI
+        console.error('Lỗi khi gọi API Google AI:', error);
 
         // Trả về lỗi cho frontend
         if (error.response) {
-            // Lỗi từ phản hồi của OpenAI API
-            console.error(error.response.status);
-            console.error(error.response.data);
-             res.status(error.response.status).json({ error: 'Lỗi từ API OpenAI', details: error.response.data });
+             // Lỗi từ phản hồi của Google AI API (có thể kiểm tra status code nếu API cung cấp)
+             console.error("API Response Error:", error.response.status, error.response.data);
+             res.status(error.response.status || 500).json({ error: 'Lỗi từ API Google AI', details: error.response.data });
         } else {
-            // Các lỗi khác (ví dụ: lỗi mạng)
+            // Các lỗi khác (ví dụ: lỗi mạng, lỗi khởi tạo)
             console.error('Lỗi:', error.message);
              res.status(500).json({ error: 'Đã xảy ra lỗi khi xử lý yêu cầu của bạn.', details: error.message });
         }
