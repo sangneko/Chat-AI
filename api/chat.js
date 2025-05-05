@@ -45,8 +45,9 @@ app.post('/api/chat', async (req, res) => {
 
     try {
         // Chọn mô hình Gemini bạn muốn sử dụng
-        // Đã cập nhật tên mô hình từ "gemini-pro" sang "gemini-1.0-pro"
-        const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro"}); // Sử dụng tên mô hình phổ biến hơn
+        // Cập nhật tên mô hình dựa trên log lỗi 404 trước đó.
+        // Thử sử dụng "gemini-1.5-pro" thay vì "gemini-1.0-pro" hoặc "gemini-pro".
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro"}); // Thử tên mô hình khác
 
         // Bắt đầu một cuộc hội thoại với mô hình
         const chat = model.startChat({
