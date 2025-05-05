@@ -1,5 +1,6 @@
 // api/chat.js
 // Đây là Serverless Function cho Vercel để xử lý yêu cầu chat sử dụng API từ puter.com
+// Dựa trên tài liệu, API này không yêu cầu API Key.
 // Tham khảo hướng dẫn tại https://developer.puter.com/tutorials/free-unlimited-openai-api/
 
 // Import các thư viện cần thiết
@@ -13,30 +14,15 @@ const app = express();
 // Middleware để xử lý JSON trong request body
 app.use(express.json());
 
-// Lấy API Key từ biến môi trường của Vercel
-// Thay thế 'PUTER_API_KEY' bằng tên biến môi trường mà hướng dẫn từ puter.com gợi ý
-const apiKey = process.env.PUTER_API_KEY;
-
 // Lấy Base URL từ hướng dẫn của puter.com
 // Thay thế 'https://api.puter.com/v1' bằng Base URL thực tế từ hướng dẫn
 const baseURL = "https://api.puter.com/v1"; // <-- Thay thế bằng Base URL từ hướng dẫn
 
-// Kiểm tra xem API Key có được tải thành công không
-// Thay thế 'PUTER_API_KEY' bằng tên biến môi trường bạn dùng
-if (!apiKey) {
-    console.error("Lỗi: Không tìm thấy biến môi trường PUTER_API_KEY.");
-    console.error("Vui lòng thiết lập biến môi trường PUTER_API_KEY trong cài đặt dự án Vercel của bạn.");
-    // Không thoát ngay mà vẫn export app để Vercel có thể deploy, nhưng function sẽ báo lỗi khi chạy
-} else {
-    console.log("Đã tải thành công PUTER_API_KEY.");
-}
-
 // Khởi tạo OpenAI client, trỏ đến base_url của dịch vụ mới
+// Không cần truyền apiKey nếu dịch vụ không yêu cầu
 const client = new OpenAI({
-  apiKey: apiKey, // Sử dụng API Key từ biến môi trường
   baseURL: baseURL, // Trỏ đến Base URL của dịch vụ mới
 });
-
 
 // Định nghĩa endpoint POST /api/chat
 // Vercel sẽ định tuyến các yêu cầu đến /api/chat tới function này
@@ -50,10 +36,7 @@ app.post('/api/chat', async (req, res) => {
         return res.status(400).json({ error: 'Không có tin nhắn được gửi.' });
     }
 
-    // Kiểm tra lại API Key trước khi gọi API
-     if (!process.env.PUTER_API_KEY) { // <-- Thay thế bằng tên biến môi trường bạn dùng
-         return res.status(500).json({ error: 'API Key cho dịch vụ AI mới chưa được cấu hình trên server.' });
-     }
+    // Không cần kiểm tra API Key ở đây nữa vì dịch vụ không yêu cầu
 
     console.log(`Nhận tin nhắn từ người dùng: "${userMessage}"`);
 
