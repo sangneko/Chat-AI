@@ -3,202 +3,169 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat với AI Bot</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Đăng nhập & Đăng bài</title>
     <style>
-        /* Tùy chỉnh thêm nếu cần */
+        /* CSS để tạo kiểu cho trang */
+        @import url('https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;700&display=swap');
+
         body {
-            font-family: 'Arial', sans-serif; /* Sử dụng font phổ biến */
-        }
-        .chat-container {
-            max-width: 600px;
-            margin: 20px auto;
-            border: 1px solid #ccc;
-            border-radius: 8px;
-            overflow: hidden;
+            font-family: 'Be Vietnam Pro', sans-serif;
+            background-color: #f0f2f5;
             display: flex;
-            flex-direction: column;
-            height: 80vh; /* Chiều cao cố định cho khung chat */
-            background-color: #fff; /* Nền trắng cho container */
-        }
-        .chat-box {
-            flex-grow: 1;
-            padding: 15px;
-            overflow-y: auto; /* Cho phép cuộn khi nội dung dài */
-            background-color: #f9f9f9; /* Nền nhẹ cho khung chat */
-            display: flex; /* Sử dụng flexbox để căn chỉnh tin nhắn */
-            flex-direction: column;
-        }
-        .message {
-            margin-bottom: 10px;
-            padding: 10px 15px; /* Tăng padding */
-            border-radius: 18px; /* Bo tròn nhiều hơn */
-            max-width: 80%;
-            word-wrap: break-word; /* Ngắt dòng khi tin nhắn dài */
-            box-shadow: 0 1px 0.5px rgba(0, 0, 0, 0.13); /* Thêm bóng nhẹ */
-        }
-        .user-message {
-            background-color: #007bff;
-            color: white;
-            align-self: flex-end; /* Căn phải */
-            margin-left: auto; /* Đẩy sang phải */
-            border-bottom-right-radius: 2px; /* Góc dưới bên phải ít bo tròn */
-        }
-        .bot-message {
-            background-color: #e9e9eb;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
             color: #333;
-            align-self: flex-start; /* Căn trái */
-            margin-right: auto; /* Đẩy sang trái */
-             border-bottom-left-radius: 2px; /* Góc dưới bên trái ít bo tròn */
         }
-         .loading-message {
-            font-style: italic;
-            color: #666;
-            align-self: flex-start; /* Căn trái */
-            margin-right: auto; /* Đẩy sang trái */
+
+        .container {
+            background-color: #ffffff;
+            padding: 2rem 3rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
         }
-        .input-area {
-            display: flex;
-            padding: 15px;
-            border-top: 1px solid #ccc;
-            background-color: #fff;
-            align-items: center; /* Căn giữa theo chiều dọc */
+
+        h2 {
+            color: #1877f2;
+            margin-bottom: 1.5rem;
         }
-        .input-area input {
-            flex-grow: 1;
-            padding: 12px; /* Tăng padding */
-            border: 1px solid #ccc;
-            border-radius: 20px; /* Bo tròn input */
-            margin-right: 10px;
+
+        .form-group {
+            margin-bottom: 1.25rem;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        input[type="text"],
+        input[type="password"],
+        textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box; /* Quan trọng để padding không làm tăng kích thước */
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="password"]:focus,
+        textarea:focus {
             outline: none;
-            font-size: 1rem; /* Kích thước font */
+            border-color: #1877f2;
         }
-        .input-area button {
-            padding: 12px 25px; /* Tăng padding */
-            background-color: #28a745;
-            color: white;
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        input[type="file"] {
+            border: 1px solid #ddd;
+            padding: 0.5rem;
+            border-radius: 8px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.85rem;
+            background-color: #1877f2;
             border: none;
-            border-radius: 20px; /* Bo tròn button */
+            border-radius: 8px;
+            color: white;
+            font-size: 1rem;
+            font-weight: 700;
             cursor: pointer;
-            transition: background-color 0.3s ease;
-            font-size: 1rem; /* Kích thước font */
+            transition: background-color 0.3s;
         }
-        .input-area button:hover {
-            background-color: #218838;
+
+        .btn:hover {
+            background-color: #166fe5;
         }
-        .input-area button:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+
+        #post-section {
+            display: none; /* Ẩn phần đăng bài ban đầu */
+        }
+        
+        .error-message {
+            color: #d93025;
+            font-size: 0.875rem;
+            margin-top: 0.5rem;
+            display: none; /* Ẩn thông báo lỗi ban đầu */
         }
     </style>
 </head>
-<body class="bg-gray-100 font-sans">
+<body>
 
-    <div class="chat-container shadow-lg">
-        <div class="chat-box" id="chat-box">
-            <div class="message bot-message">Chào bạn! Tôi là AI Bot. Bạn có câu hỏi gì không?</div>
+    <div class="container">
+        <div id="login-section">
+            <h2>Đăng nhập</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username">Tên đăng nhập</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Mật khẩu</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <p id="login-error" class="error-message">Tên đăng nhập hoặc mật khẩu không đúng.</p>
+                <button type="submit" class="btn">Đăng nhập</button>
+            </form>
         </div>
-        <div class="input-area">
-            <input type="text" id="user-input" placeholder="Nhập tin nhắn của bạn...">
-            <button id="send-button">Gửi</button>
+
+        <div id="post-section">
+            <h2>Tạo bài viết mới</h2>
+            <p>Xin chào, <strong id="user-display"></strong>!</p>
+            <form action="/upload" method="post" enctype="multipart/form-data">
+                <div class="form-group">
+                    <label for="status">Dòng trạng thái của bạn</label>
+                    <textarea id="status" name="status" placeholder="Bạn đang nghĩ gì?" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="image">Chọn ảnh để đăng</label>
+                    <input type="file" id="image" name="image" accept="image/*" required>
+                </div>
+                <button type="submit" class="btn">Đăng bài</button>
+            </form>
         </div>
     </div>
 
     <script>
-        const chatBox = document.getElementById('chat-box');
-        const userInput = document.getElementById('user-input');
-        const sendButton = document.getElementById('send-button');
+        // JavaScript để xử lý chuyển đổi giữa các form
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            // Ngăn form gửi đi theo cách truyền thống
+            event.preventDefault(); 
+            
+            // Lấy giá trị từ các ô input
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const loginError = document.getElementById('login-error');
 
-        // Hàm thêm tin nhắn vào khung chat
-        function addMessage(message, sender, isTyping = false) {
-            const messageElement = document.createElement('div');
-            messageElement.classList.add('message', `${sender}-message`);
-            if (isTyping) {
-                 messageElement.classList.add('loading-message');
-                 messageElement.textContent = 'AI Bot đang suy nghĩ...'; // Hoặc dùng dấu ba chấm động
+            // --- PHẦN QUAN TRỌNG ---
+            // Trong thực tế, bạn sẽ gửi `username` và `password` đến server để kiểm tra.
+            // Ở đây, chúng ta chỉ giả lập một lần đăng nhập thành công để minh họa.
+            if (username === "admin" && password === "123") {
+                // Nếu đúng, ẩn form đăng nhập và hiện form đăng bài
+                document.getElementById('login-section').style.display = 'none';
+                document.getElementById('post-section').style.display = 'block';
+                document.getElementById('user-display').textContent = username; // Hiển thị tên người dùng
+                loginError.style.display = 'none'; // Ẩn thông báo lỗi nếu có
             } else {
-                messageElement.textContent = message;
-            }
-            chatBox.appendChild(messageElement);
-            // Cuộn xuống cuối khung chat
-            chatBox.scrollTop = chatBox.scrollHeight;
-            return messageElement; // Trả về phần tử tin nhắn để có thể xóa sau
-        }
-
-        // Hàm gửi tin nhắn đến backend
-        async function sendMessage() {
-            const message = userInput.value.trim();
-            if (message === '') {
-                return; // Không gửi tin nhắn trống
-            }
-
-            // Thêm tin nhắn của người dùng vào khung chat
-            addMessage(message, 'user');
-
-            // Xóa nội dung trong ô nhập liệu và vô hiệu hóa input/button
-            userInput.value = '';
-            userInput.disabled = true;
-            sendButton.disabled = true;
-
-            // Hiển thị trạng thái đang gõ
-            const typingMessageElement = addMessage('', 'bot', true);
-
-
-            try {
-                // Gửi tin nhắn đến endpoint backend của bạn trên Vercel
-                // Vercel sẽ tự động định tuyến /api/chat đến Serverless Function
-                const response = await fetch('/api/chat', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ message: message })
-                });
-
-                if (!response.ok) {
-                    // Xử lý lỗi HTTP
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-
-                const data = await response.json();
-                const botResponse = data.reply; // Giả định backend trả về JSON có trường 'reply'
-
-                // Xóa trạng thái đang gõ
-                chatBox.removeChild(typingMessageElement);
-
-                // Thêm phản hồi của bot vào khung chat
-                addMessage(botResponse, 'bot');
-
-            } catch (error) {
-                console.error('Lỗi khi gửi tin nhắn:', error);
-                 // Xóa trạng thái đang gõ nếu còn
-                 if (chatBox.contains(typingMessageElement)) {
-                     chatBox.removeChild(typingMessageElement);
-                 }
-                addMessage('Xin lỗi, đã xảy ra lỗi khi kết nối với AI Bot.', 'bot');
-            } finally {
-                // Kích hoạt lại input và button
-                userInput.disabled = false;
-                sendButton.disabled = false;
-                userInput.focus(); // Đặt con trỏ vào input sau khi gửi
-            }
-        }
-
-        // Lắng nghe sự kiện click vào nút Gửi
-        sendButton.addEventListener('click', sendMessage);
-
-        // Lắng nghe sự kiện nhấn Enter trong ô nhập liệu
-        userInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault(); // Ngăn chặn hành động mặc định của Enter (xuống dòng)
-                sendMessage();
+                // Nếu sai, hiển thị thông báo lỗi
+                loginError.style.display = 'block';
             }
         });
-
-         // Đặt con trỏ vào ô nhập liệu khi trang tải xong
-        window.onload = function() {
-            userInput.focus();
-        };
     </script>
 
 </body>
